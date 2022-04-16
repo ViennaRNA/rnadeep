@@ -18,15 +18,8 @@ setup(
         ],
     python_requires = '>=3.7',
     install_requires = [
-        'RNA',
         'numpy',
-        'scipy',
         'tensorflow'],
-    packages = ['rnadeep'],
-    entry_points = {
-        'console_scripts': [
-            'generate_data=rnadeep.generate_data:main'
-            ],
-        }
+    packages = ['rnadeep']
 )
 

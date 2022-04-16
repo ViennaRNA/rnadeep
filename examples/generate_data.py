@@ -2,8 +2,7 @@
 
 import os
 import numpy as np
-import scipy.stats as ss
-#from sklearn.model_selection import train_test_split
+
 import RNA
 
 def generate_data_files(lengths, datadir):
@@ -51,7 +50,7 @@ def sample_normal_plus(start, end, central, std, number):
 def save_from_numpy_validationsplit(datadir):
     sequences = np.load(os.path.join(datadir, "sequences.npy"))
     structures = np.load(os.path.join(datadir, "structures.npy"))
-    xtrain, xval, ytrain, yval = train_test_split(sequences , structures, test_size = 0.2)
+    xtrain, xval, ytrain, yval = train_test_split(sequences, structures, test_size = 0.2)
     os.makedirs(os.path.join(datadir, "train"), exist_ok = True)
     os.makedirs(os.path.join(datadir, "val"), exist_ok = True)
     np.save(os.path.join(datadir, "train", "sequences.npy"), xtrain)
@@ -59,11 +58,25 @@ def save_from_numpy_validationsplit(datadir):
     np.save(os.path.join(datadir, "val", "sequences.npy"), xval)
     np.save(os.path.join(datadir, "val", "structures.npy"), yval)
 
+def gen_fixed_len_data(l, n, root = ''):
+    name = f"l{l}_n{n}"
+    lengths = np.full(n, l)
+    directory = os.path.join(root, name)
+    generate_data_files(lengths, directory)
+
 def main():
     #np.random.seed(1) # NOTE: now or never.
-    datadir = "data/interim/"
+    datadir = "data/"
 
-    # Specific length distributions ...
+    #
+    # Random sequence/structure pairs with static length
+    #
+    gen_fixed_len_data(70, 800, datadir) # Training set
+    gen_fixed_len_data(70, 200, datadir) # Validation set
+
+    #
+    # Testing variable length distributions ...
+    #
     sizes = [500, 300, 100, 50]
     names = ["train_50k", "train_30k", "train_10k", "val_5k"]
     for size, name in zip(sizes, names):
@@ -86,22 +99,6 @@ def main():
 
         #TODO: Length distribution method "normal_25-100"
 
-    # Repeated data set.
-    size = 100
-    length = 70
-    name = f"{size}_length{length}_ids"
-    for i in range(1, 11):
-        lengths = np.full(size, length)
-        directory = os.path.join(datadir, name, f"id_{i:02d}")
-        generate_data_files(lengths, directory)
-
-    # Validation data set.
-    size = 200
-    name = "validation_lengths"
-    for l in [20, 25, 30]:
-        directory = os.path.join(datadir, name, f"len_{l}_{size}")
-        lengths = np.full(size, l)
-        generate_data_files(lengths, directory)
 
 if __name__ == '__main__':
     main()

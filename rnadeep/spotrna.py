@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from metrics import mcc
 
 import os
 import numpy as np
@@ -12,6 +11,8 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import CSVLogger
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import concatenate,Add
+
+from .metrics import mcc
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # FATAL
 tf.get_logger().setLevel('FATAL')

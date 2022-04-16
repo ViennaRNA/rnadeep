@@ -1,8 +1,5 @@
-#!/usr/bin/env python3
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-from tensorflow.keras import backend as K
 import tensorflow as tf
+from tensorflow.keras import backend as K
 
 def mcc(y_true, y_pred):
     y_pos = K.round(K.clip(y_true, 0, 1))
