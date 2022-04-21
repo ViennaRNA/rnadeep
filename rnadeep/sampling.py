@@ -35,13 +35,13 @@ def draw_sets(fname, splits):
         raise ValueError('Something about the input file is odd.')
 
     num = len(tags)
-    if not all(int(num*s) == num*s for s in splits):
+    if not all(np.isclose(int(num*s), num*s) for s in splits):
         nums = [num*s for s in splits]
         raise ValueError(f'Provided splits do not yield integers. ({nums})')
     
     a = np.arange(num)
     for s in splits:
-        ids = np.random.choice(a, int(num*s), replace = False)
+        ids = np.random.choice(a, int(round(num*s)), replace = False)
         nsd = []
         for i in sorted(ids):
             nsd.append((tags[i], seqs[i], dbrs[i]))
