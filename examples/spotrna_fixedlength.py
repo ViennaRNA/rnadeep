@@ -11,25 +11,32 @@ from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
 from rnadeep.spotrna import spotrna
 from rnadeep.metrics import mcc, f1, sensitivity
 from rnadeep.data_generators import MatrixEncoding
+from rnadeep.sampling import draw_sets
 
-#Model Settings
+
+#
+# Get the data for analysis
+#
+fname = "data/fixlen70_n100.fa"
+train, valid, tests = list(draw_sets(fname, splits = [0.8, 0.1, 0.1]))
+[train_tags, train_seqs, train_dbrs] = zip(*train)
+[valid_tags, valid_seqs, valid_dbrs] = zip(*valid)
+[tests_tags, tests_seqs, tests_dbrs] = zip(*tests)
+
+#
+# Model Settings
+#
 model = 1
 batch_size = 5
 epochs = 3
+data = os.path.basename(fname)
+name = f"spotrna_m{model}_bs{batch_size}_{data}"
 
-rootd = "data/"
-train = "l70_n800"
-valid = "l70_n200"
-
-name = f"spotrna_m{model}_bs{batch_size}_{train}"
-
-sequences = np.load(os.path.join(rootd, train, "sequences.npy"), mmap_mode = "r")
-structures = np.load(os.path.join(rootd, train, "structures.npy"), mmap_mode = "r")
-train_generator = MatrixEncoding(batch_size, sequences, structures)
-
-sequences = np.load(os.path.join(rootd, valid, "sequences.npy"), mmap_mode = "r")
-structures = np.load(os.path.join(rootd, valid, "structures.npy"), mmap_mode = "r")
-valid_generator = MatrixEncoding(batch_size, sequences, structures)
+#
+# Model Setup
+#
+train_generator = MatrixEncoding(batch_size, train_seqs, train_dbrs)
+valid_generator = MatrixEncoding(batch_size, valid_seqs, valid_dbrs)
 
 m = spotrna(model, False)
 m.compile(optimizer = "adam",
@@ -37,6 +44,7 @@ m.compile(optimizer = "adam",
           metrics = ["acc", mcc, f1, sensitivity],
           run_eagerly = True)
 
+# Callback functions for fitting.
 csv_logger = CSVLogger(f"{name}.csv", separator = ';', append = True)
 model_checkpoint = ModelCheckpoint(filepath = name, 
                                    save_weights_only = False, 

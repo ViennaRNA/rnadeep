@@ -1,103 +1,85 @@
 #!/usr/bin/env python
 
 import os
+import random
 import numpy as np
-
-import RNA
-
-def generate_data_files(lengths, datadir):
-    """ Save sequence/structure pairs for the given lengths.
-    """
-    os.makedirs(os.path.join(datadir))
-    sequences, structures, energies = list(zip(*generate_random_structures(lengths)))
-    sequences = np.asarray(sequences, dtype = np.unicode_)
-    structures = np.asarray(structures, dtype = np.unicode_)
-    np.save(os.path.join(datadir, "sequences"), sequences)
-    np.save(os.path.join(datadir, "structures"), structures)
-
-def generate_random_structures(lengths):
-    """ Using RNA.fold to generate sequence/structure pairs.
-    """
-    return ((seq, *RNA.fold(seq)) for seq in 
-            (RNA.random_string(int(l), "ACGU") for l in lengths))
-
-def sample_uniform(start, end, number):
-    return np.random.randint(start, end+1, number)
-
-def sample_uniform_plus(start, end, number):
-    """
-    This function generates 
-        - 10% sequences with [start:end] length distribution
-        - 30% sequences with [start+25:end+25] length distribution
-        - 60% sequences with [start+50:end+50] length distribution
-
-    Note (SB): I do not understand why.
-    """
-    lengths = np.array([], dtype = int)
-    for percentage in [0.1, 0.3, 0.6]:
-        n = int(number * percentage)
-        print(f'Generating {n} sequences within [{start}:{end}].')
-        lengths = np.append(lengths, np.random.randint(start, end+1, n), axis = 0)
-        start += 25
-        end += 25
-    return lengths
-
-def sample_normal_plus(start, end, central, std, number):
-    X1 = (np.random.normal(central, std, int(number*0.75)).round().astype(np.int64))
-    X2 = np.random.randint(start,end+1, number-int(number*0.75))
-    return np.concatenate((X1,X2), axis = 0)
-
-def save_from_numpy_validationsplit(datadir):
-    sequences = np.load(os.path.join(datadir, "sequences.npy"))
-    structures = np.load(os.path.join(datadir, "structures.npy"))
-    xtrain, xval, ytrain, yval = train_test_split(sequences, structures, test_size = 0.2)
-    os.makedirs(os.path.join(datadir, "train"), exist_ok = True)
-    os.makedirs(os.path.join(datadir, "val"), exist_ok = True)
-    np.save(os.path.join(datadir, "train", "sequences.npy"), xtrain)
-    np.save(os.path.join(datadir, "train", "structures.npy"), ytrain)
-    np.save(os.path.join(datadir, "val", "sequences.npy"), xval)
-    np.save(os.path.join(datadir, "val", "structures.npy"), yval)
-
-def gen_fixed_len_data(l, n, root = ''):
-    name = f"l{l}_n{n}"
-    lengths = np.full(n, l)
-    directory = os.path.join(root, name)
-    generate_data_files(lengths, directory)
+from rnadeep.sampling import (generate_random_structures, 
+                              write_data_file,
+                              draw_sets,
+                              write_fixed_len_data_file,
+                              write_uniform_len_data_file,
+                              write_normal_len_data_file)
 
 def main():
-    #np.random.seed(1) # NOTE: now or never.
+    """Generates random sequence data files.
+
+    datadir/datatype.fasta
+    '''
+    >rseq_{i}_{energy}\n
+    sequence\n
+    structure\n
+    >rseq_{i+1}_{energy}\n
+    sequence\n
+    structure\n
+    '''
+    """
     datadir = "data/"
+    if not os.path.exists(datadir):
+        os.mkdir(datadir)
 
     #
     # Random sequence/structure pairs with static length
     #
-    gen_fixed_len_data(70, 800, datadir) # Training set
-    gen_fixed_len_data(70, 200, datadir) # Validation set
+    fname = write_fixed_len_data_file(70, num = 1000, root = datadir)
+    print(f'Wrote file: {fname}')
+
+    fname = write_fixed_len_data_file(70, num = 100, root = datadir)
+    print(f'Wrote file: {fname}')
+    
+    #
+    # Examples to draw random sets (training, validation, test) from a file.
+    #
+    for s in draw_sets(fname, splits = [0.8, 0.1, 0.1]):
+        tags, seqs, dbrs = list(zip(*s))
+
+    for s in draw_sets(fname, splits = [1]):
+        tags, seqs, dbrs = list(zip(*s))
 
     #
     # Testing variable length distributions ...
     #
-    sizes = [500, 300, 100, 50]
-    names = ["train_50k", "train_30k", "train_10k", "val_5k"]
-    for size, name in zip(sizes, names):
-        print(f"Creating dataset for set {name}, containing {size} sequences")
+    fname = write_uniform_len_data_file(25, 100, num = 100, root = datadir)
+    print(f'Wrote file: {fname}')
 
-        # Length distribution method "uniform_25-100":
-        lengths = np.sort(sample_uniform(25, 100, size))
-        directory = os.path.join(datadir, "uniform_25-100", name)
-        generate_data_files(lengths, directory)
+    #
+    # Reproduce previous "uniform-plus results:
+    #
+    name = f"uniform_plus_len25-100_n100"
+    fname = os.path.join(datadir, name)
+    l1 = np.random.randint(25,  50+1, int(100 * 0.1))
+    l2 = np.random.randint(50,  75+1, int(100 * 0.3))
+    l3 = np.random.randint(75, 100+1, int(100 * 0.6))
+    rdata = generate_random_structures(np.concatenate((l1,l2,l3), axis = 0))
+    write_data_file(rdata, fname)
+    print(f'Wrote file: {fname}')
 
-        # Length distribution method "uniform_plus_25-100":
-        lengths = np.sort(sample_uniform_plus(25, 50, size))
-        directory = os.path.join(datadir, "uniform_plus_25-100", name)
-        generate_data_files(lengths, directory)
+    #
+    # Testing normal distributions ...
+    #
+    fname = write_normal_len_data_file(50, 5, num = 100, root = datadir)
+    print(f'Wrote file: {fname}')
 
-        # Length distribution method "normal_lowspike_25-100":
-        lengths = np.sort(sample_normal_plus(25, 100, 35, 5, size))
-        directory = os.path.join(datadir, "normal_lowspike_25-100", name)
-        generate_data_files(lengths, directory)
-
-        #TODO: Length distribution method "normal_25-100"
+    #
+    # Testing example spike distribution ...
+    #
+    num = 100
+    name = f"uniform_len25-100_spike{35}_{5}_n{num}"
+    fname = os.path.join(datadir, name)
+    l1 = np.random.normal(35, 5, int(num * 0.75)).round().astype(np.int64)
+    l2 = np.random.randint(25, 100 + 1, num - int(num * 0.75))
+    rdata = generate_random_structures(np.concatenate((l1,l2), axis = 0))
+    write_data_file(rdata, fname)
+    print(f'Wrote file: {fname}')
 
 
 if __name__ == '__main__':
