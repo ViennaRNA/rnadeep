@@ -2,12 +2,12 @@
 import os
 import random
 import numpy as np
-import RNA
 
 def rseq(l):
     return ''.join(random.choice('ACGU') for _ in range(l))
 
 def generate_random_structures(lengths):
+    import RNA
     """ Using RNA.fold to generate sequence/structure pairs.
     """
     return ((seq, *RNA.fold(seq)) for seq in 
