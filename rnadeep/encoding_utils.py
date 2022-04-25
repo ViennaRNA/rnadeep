@@ -1,6 +1,5 @@
 
 import numpy as np
-import RNA
 
 def one_hot_encode(char):
     char = char.upper()
@@ -24,11 +23,55 @@ def one_hot_matrix(seq):
             matrix[i][j] = np.concatenate((hot_i, hot_j))
             matrix[j][i] = np.concatenate((hot_j, hot_i))
     return matrix
- 
+
+def make_pair_table(ss, base=0, chars=['.']):
+    """ Return a secondary struture in form of pair table.
+
+    Args:
+      ss (str): secondary structure in dot-bracket format
+      base (int, optional): choose between a pair-table with base 0 or 1
+      chars (list, optional): a list of characters to be are ignored, default:
+        ['.']
+
+    **Example:**
+       base=0: ((..)). => [5,4,-1,-1,1,0,-1]
+        i.e. start counting from 0, unpaired = -1
+       base=1: ((..)). => [7,6,5,0,0,2,1,0]
+        i.e. start counting from 1, unpaired = 0, pt[0]=len(ss)
+
+    Returns:
+      [list]: A pair-table
+    """
+    stack = []
+    if base == 0:
+        pt = [-1] * len(ss)
+    elif base == 1:
+        pt = [0] * (len(ss) + base)
+        pt[0] = len(ss)
+    else:
+        raise Exception(f"unexpected value in make_pair_table: (base = {base})")
+
+    for i, char in enumerate(ss, base):
+        if (char == '('):
+            stack.append(i)
+        elif (char == ')'):
+            try:
+                j = stack.pop()
+            except IndexError as e:
+                raise Exception("Too many closing brackets in secondary structure")
+            pt[i] = j
+            pt[j] = i
+        elif (char not in set(chars)):
+            raise Exception(f"unexpected character in sequence: '{char}'")
+    if stack != []:
+        raise Exception("Too many opening brackets in secondary structure")
+    return pt
+  
 def base_pair_matrix(ss):
     # ptable[i] = j if (i.j) pair or 0 if i is unpaired, 
     # ptable[0] contains the length of the structure.
-    ptable = RNA.ptable(ss) 
+    # ptable = RNA.ptable(ss)
+    ptable = make_pair_table(ss, 1)
     matrix = np.zeros((len(ss), len(ss), 1), dtype = int)
     for i in range(1, len(ptable)):
         if ptable[i] != 0:
