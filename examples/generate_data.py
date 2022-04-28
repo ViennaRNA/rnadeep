@@ -48,6 +48,12 @@ def main():
     #
     # Testing variable length distributions ...
     #
+    fname = write_uniform_len_data_file(70, 120, num = 10_000, root = datadir)
+    print(f'Wrote file: {fname}')
+
+    fname = write_uniform_len_data_file(70, 120, num = 1000, root = datadir)
+    print(f'Wrote file: {fname}')
+
     fname = write_uniform_len_data_file(25, 100, num = 100, root = datadir)
     print(f'Wrote file: {fname}')
 

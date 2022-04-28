@@ -13,15 +13,16 @@ from rnadeep.metrics import mcc, f1, sensitivity
 from rnadeep.data_generators import MatrixEncoding
 from rnadeep.sampling import draw_sets
 
+import absl.logging
+absl.logging.set_verbosity(absl.logging.ERROR)
 
 #
 # Get the data for analysis
 #
 fname = "data/fixlen70_n100.fa"
-train, valid, tests = list(draw_sets(fname, splits = [0.8, 0.1, 0.1]))
+train, valid = list(draw_sets(fname, splits = [0.8, 0.2]))
 [train_tags, train_seqs, train_dbrs] = zip(*train)
 [valid_tags, valid_seqs, valid_dbrs] = zip(*valid)
-[tests_tags, tests_seqs, tests_dbrs] = zip(*tests)
 
 #
 # Model Settings
@@ -38,7 +39,10 @@ name = f"spotrna_m{model}_bs{batch_size}_{data}"
 train_generator = MatrixEncoding(batch_size, train_seqs, train_dbrs)
 valid_generator = MatrixEncoding(batch_size, valid_seqs, valid_dbrs)
 
+
 m = spotrna(model, False)
+print(m.summary())
+
 m.compile(optimizer = "adam",
           loss = "binary_crossentropy", 
           metrics = ["acc", mcc, f1, sensitivity],

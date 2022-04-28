@@ -21,7 +21,9 @@ def write_data_file(data, fname, mode = 'w'):
             en = int(round(en*100))
             f.write(f'>rseq_id={id}_en={en}\n{seq}\n{dbr}\n')
 
-def draw_sets(fname, splits):
+def draw_sets(fname, splits = None):
+    if splits is None:
+        splits = [1]
     assert sum(splits) <= 1
 
     with open(fname) as f:
@@ -42,10 +44,7 @@ def draw_sets(fname, splits):
     a = np.arange(num)
     for s in splits:
         ids = np.random.choice(a, int(num*s), replace = False)
-        nsd = []
-        for i in sorted(ids):
-            nsd.append((tags[i], seqs[i], dbrs[i]))
-        yield nsd
+        yield [(tags[i], seqs[i], dbrs[i]) for i in sorted(ids)]
         a = [i for i in a if i not in ids]
 
 def write_fixed_len_data_file(seqlen, num, root = ''):

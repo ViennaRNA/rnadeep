@@ -96,12 +96,13 @@ def encode_structure_matrix(structures):
     assert min(len(s) for s in structures) == max(len(s) for s in structures)
     return np.asarray([base_pair_matrix(ss) for ss in structures], dtype=np.float32)
 
-def encode_padded_sequence_matrix(sequences, max_length):
+def encode_padded_sequence_matrix(sequences, max_length = None):
+    if max_length is None:
+        max_length = max(len(ss) for ss in sequences)
     batch_size = len(sequences)
 
-    # TODO: why are there two?
-    x_array = np.zeros((batch_size, max_length, max_length, 8))
-    matrix_array = np.zeros((batch_size, max_length, max_length))
+    xs = np.zeros((batch_size, max_length, max_length, 8), dtype = np.float32)
+    masks = np.zeros((batch_size, max_length, max_length, 1), dtype = np.float32)
 
     for i, seq in enumerate(sequences): 
             wl = max_length - len(seq)
@@ -109,26 +110,28 @@ def encode_padded_sequence_matrix(sequences, max_length):
             # The one hot encoding.
             x = one_hot_matrix(seq)
             x = np.pad(x, ((0, wl), (0, wl), (0, 0)), 'constant')
-            x_array[i] = x
+            xs[i] = x
 
-            # Sequence=1 vs padding=0
-            matrix = np.ones((len(seq), len(seq)))
-            matrix = np.pad(matrix, ((0, wl), (0, wl)), 'constant')
-            matrix_array[i] = matrix
+            # Sequence = 1, padding = 0
+            mask = np.ones((len(seq), len(seq))).reshape(len(seq), len(seq), 1)
+            mask = np.pad(mask, ((0, wl), (0, wl), (0, 0)), 'constant')
+            masks[i] = mask
 
-    return x_array, matrix_array
+    return xs, masks
 
-def encode_padded_structure_matrix(structures, max_length):
+def encode_padded_structure_matrix(structures, max_length = None):
+    if max_length is None:
+        max_length = max(len(ss) for ss in structures)
     batch_size = len(structures)
 
-    y_array = np.zeros((batch_size, max_length, max_length, 1))
+    ys = np.zeros((batch_size, max_length, max_length, 1), dtype = np.float32)
     for j in range(batch_size):
         ss = structures[j]
         wl = max_length - len(ss)
         y = base_pair_matrix(ss)
         y = np.pad(y, ((0, wl), (0, wl), (0, 0)), 'constant')
-        y_array[j] = y
-    return y_array
+        ys[j] = y
+    return ys
 
 def binary_encode(structure):
     intab = "()."
