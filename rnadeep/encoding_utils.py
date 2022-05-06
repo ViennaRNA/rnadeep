@@ -102,7 +102,7 @@ def encode_padded_sequence_matrix(sequences, max_length = None):
     batch_size = len(sequences)
 
     xs = np.zeros((batch_size, max_length, max_length, 8), dtype = np.float32)
-    masks = np.zeros((batch_size, max_length, max_length, 1), dtype = np.float32)
+    masks = np.zeros((batch_size, max_length, max_length), dtype = np.float32)
 
     for i, seq in enumerate(sequences): 
             wl = max_length - len(seq)
@@ -113,8 +113,8 @@ def encode_padded_sequence_matrix(sequences, max_length = None):
             xs[i] = x
 
             # Sequence = 1, padding = 0
-            mask = np.ones((len(seq), len(seq))).reshape(len(seq), len(seq), 1)
-            mask = np.pad(mask, ((0, wl), (0, wl), (0, 0)), 'constant')
+            mask = np.ones((len(seq), len(seq)))
+            mask = np.pad(mask, ((0, wl), (0, wl)), 'constant')
             masks[i] = mask
 
     return xs, masks
