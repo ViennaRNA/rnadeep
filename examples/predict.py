@@ -1,43 +1,50 @@
+#!/usr/bin/env python
+
 import os
 import numpy as np
-from tensorflow import keras
+from tensorflow.keras.models import load_model
+
 from rnadeep.metrics import mcc, f1, sensitivity
+from rnadeep.data_generators import PaddedMatrixEncoding
 from rnadeep.sampling import draw_sets
-from rnadeep.data_generators import MatrixEncoding, PaddedMatrixEncoding
 
 import absl.logging
 absl.logging.set_verbosity(absl.logging.ERROR)
 
-mymodel = 'spotrna_padded_m3_100000_length119-120-003_bpRNAinv120-022'
-m = keras.models.load_model(mymodel,
-                            custom_objects = {"mcc": mcc,
-                                              "f1": f1, 
-                                              "sensitivity": sensitivity})
+def main():
+    data = '' # choose an input file.
+    model = '' # choose a trained model here
+    outdir = f"predictions/{model}-{data}"
 
-# Choose a testset.
-fname = 'tdata/test.fa'
-[tests] = list(draw_sets(fname))
-[tags, seqs, dbrs] = zip(*tests)
+    evaluate = True
+    predict = False
+    batch_size = 1
 
-paddeddata = True
-if paddeddata: 
-    gen = PaddedMatrixEncoding(1, seqs, dbrs)
-    print(m.evaluate(gen))
-    mrxs = m.predict(gen)
-    # Convert tf.RaggedTensor to numpy arrays.
-    mrxs = mrxs.numpy()
-    for i in range(len(mrxs)):
-        mrxs[i] = np.asarray([x for x in mrxs[i]], dtype=np.float32)
-else:
-    gen = MatrixEncoding(1, seqs, dbrs)
-    print(m.evaluate(gen))
-    mrxs = m.predict(gen)
+    # Choose a testset.
+    [datas] = list(draw_sets(data))
+    [tags, seqs, dbrs] = zip(*datas)
+    tgen = PaddedMatrixEncoding(batch_size, seqs, dbrs)
 
-outdir = f"predictions/{mymodel}"
-if not os.path.exists(outdir):
-    os.makedirs(outdir)
+    model = load_model(basemodel,
+                       custom_objects = {"mcc": mcc, "f1": f1, 
+                                         "sensitivity": sensitivity})
+    if evaluate: 
+        print(m.evaluate(tgen))
 
-np.save(os.path.join(outdir, 'sequences'), seqs)
-np.save(os.path.join(outdir, 'structures'), dbrs)
-np.save(os.path.join(outdir, 'matrices'), mrxs)
+    if predict:
+        mrxs = m.predict(tgen)
+        # Convert tf.RaggedTensor to numpy arrays.
+        if not isinstance(mrxs, np.ndarray):
+            mrxs = mrxs.numpy()
+            for i in range(len(mrxs)):
+                mrxs[i] = np.asarray([x for x in mrxs[i]], dtype=np.float32)
+        
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+        np.save(os.path.join(outdir, 'sequences'), seqs)
+        np.save(os.path.join(outdir, 'structures'), dbrs)
+        np.save(os.path.join(outdir, 'matrices'), mrxs)
+
+if __name__ == '__main__':
+    main()
 

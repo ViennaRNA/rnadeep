@@ -3,7 +3,14 @@ import RNA
 import numpy as np
 from rnadeep.sampling import write_data_file
 
-root = '/scr/bajor/stef/CROW/ML-Frontiers/100000_length70/val'
+# This script converts an older deprecated input format 
+# where sequences and structures were given as .npy files 
+# into the current standard: fasta-like files with 
+# >name
+# SEQUENCE
+# STRUCTURE
+# ...
+root = '' # TODO: set the root directory here.
 
 seqs = 'simulated_sequences.npy'
 dbrs = 'simulated_structures.npy'
@@ -19,7 +26,8 @@ for seq, dbr in zip(seqs, dbrs):
     assert ss == dbr
     data.append((seq, ss, en))
 
-#data = ((seq, *RNA.fold(seq)) for seq in seqs)
+# alternatively:
+# data = ((seq, *RNA.fold(seq)) for seq in seqs)
 
 fname = 'combined.fa'
 write_data_file(data, os.path.join(root, fname))
